@@ -1,0 +1,11 @@
+node_modules
+.local
+.venv
+work
+outputs
+dist
+ml/artifacts
+package-lock.json
+packages/database/migrations/meta
+test-results
+playwright-report

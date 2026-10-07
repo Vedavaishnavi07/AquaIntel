@@ -1,0 +1,9 @@
+experiment_id = "synthetic-growth-v1"
+seed = 42
+dataset_version = "synthetic_sampling_v0.1"
+feature_version = "growth_lag_v1"
+horizon_days = 7
+train_farms = ["demo-farm-0", "demo-farm-1", "demo-farm-2", "demo-farm-3", "demo-farm-4"]
+validation_farms = ["demo-farm-5"]
+test_farms = ["demo-farm-6", "demo-farm-7"]
+models = ["last_growth_rate", "linear_regression"]

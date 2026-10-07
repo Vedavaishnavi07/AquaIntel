@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: aquaintel
+      POSTGRES_USER: aquaintel
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set a strong hex DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U aquaintel -d aquaintel"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://aquaintel:${DB_PASSWORD}@db:5432/aquaintel
+      APP_ORIGIN: ${APP_ORIGIN:?Set https origin}
+      REGISTRATION_CODE: ${REGISTRATION_CODE:?Set private registration code}
+      TRUST_PROXY: "1"
+    volumes:
+      - images:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+  proxy:
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN:?Set public DNS hostname}
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [app]
+    restart: unless-stopped
+volumes:
+  postgres_data:
+  images:
+  caddy_data:

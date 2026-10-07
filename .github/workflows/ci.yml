@@ -1,0 +1,50 @@
+name: AquaIntel checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: integration-only
+          POSTGRES_USER: aquaintel
+          POSTGRES_DB: aquaintel
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U aquaintel" --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm test
+        env:
+          TEST_DATABASE_URL: postgresql://aquaintel:integration-only@localhost:5432/aquaintel
+      - run: npm run db:migrate
+        env:
+          DATABASE_URL: postgresql://aquaintel:integration-only@localhost:5432/aquaintel
+      - run: npx playwright install --with-deps chromium
+      - run: npm run demo:serve > /tmp/aquaintel.log 2>&1 &
+      - run: node scripts/wait-health.mjs
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failure
+          path: test-results/
+  ml-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r ml/requirements.txt
+      - run: python -m unittest discover -s ml/tests -v
+      - run: python -m ml.training.run_demo

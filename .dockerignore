@@ -1,0 +1,12 @@
+node_modules
+.local
+.venv
+.git
+.env
+.env.*
+work
+outputs
+ml/artifacts
+dist
+test-results
+playwright-report
